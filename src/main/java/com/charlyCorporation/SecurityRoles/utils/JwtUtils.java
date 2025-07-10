@@ -12,6 +12,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,8 +27,71 @@ public class JwtUtils {
 
     //Metodo para la creacion de Tokens
     public String createToken(Authentication authentication){
-        return null;
+
+        Algorithm algorithm = Algorithm.HMAC256(privatekey);
+
+        //
+        String username = authentication.getPrincipal().toString();
+
+        //Obtener los permisos "authorizaciones" separados por una coma
+      /*  String authorities = authentication.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(",")); */
+
+        //Generamos el token
+        String jwtToken = JWT.create()
+                .withIssuer(this.userGenerator) //Usuario generado por el token
+                .withSubject(username) //A quien se le genea el token
+                .withClaim("authorities", authentication.getAuthorities()
+                        .stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList()))  //Datos o informacion contraido en el JWT
+                .withIssuedAt(new Date()) // Fecha de generacion del token
+                .withExpiresAt(new Date(System.currentTimeMillis() + (30 * 60000))) //Fecha de expiracion 30min
+                .withJWTId(UUID.randomUUID().toString()) //Id al token random que se genera
+                .withNotBefore(new Date(System.currentTimeMillis())) //Desde que fecha es valido
+                .sign(algorithm); //La firma es creada con nuestra clave secreta
+
+        return jwtToken;
     }
+
+    //Metodo para decodificar
+    public DecodedJWT validateToken(String token){
+
+        try {
+
+            Algorithm algorithm = Algorithm.HMAC256(privatekey);
+            JWTVerifier verifier = JWT.require(algorithm)
+                    .withIssuer(userGenerator)
+                    .build();
+
+            DecodedJWT decodedJWT = verifier.verify(token);
+            return decodedJWT;
+        }
+        catch (JWTVerificationException exception) {
+            throw new JWTVerificationException("Invalid Token, Not Authorized");
+        }
+        
+
+    }
+
+    //Metodo para obtener el nombre de usuario del token
+    public String extractUsername(DecodedJWT decodedJWT){
+        //El subject es el usuario que establecimos al crear el token
+        return decodedJWT.getSubject().toString();
+    }
+
+    //Metodo para obtener un Claim en especifico
+    public Claim getSpecificClaim(DecodedJWT decodedJWT, String claimName){
+        return decodedJWT.getClaim(claimName);
+    }
+
+    //Metodo para obtener todos los Claims
+    public Map<String, Claim> returnAllClaims(DecodedJWT decodedJWT){
+        return decodedJWT.getClaims();
+    }
+
 
 
     
