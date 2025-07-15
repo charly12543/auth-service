@@ -28,17 +28,21 @@ public class SecurityConfig {
     @Autowired
     private JwtUtils jwtUtils;
 
-        @Bean
-        public SecurityFilterChain filterChain (HttpSecurity httpSecurity) throws Exception {
-            return httpSecurity
-                    .csrf(csrf -> csrf.disable())
-                    .httpBasic(Customizer.withDefaults())
-                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .addFilterBefore(new JwtTokenValidator(jwtUtils), BasicAuthenticationFilter.class)
-                    .build();
-        }
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/login").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new JwtTokenValidator(jwtUtils), BasicAuthenticationFilter.class)
+                .build();
+    }
 
-        @Bean
+
+    @Bean
         public AuthenticationManager authenticationManager(
                 AuthenticationConfiguration authenticationConfiguration) throws Exception{
             return authenticationConfiguration.getAuthenticationManager();

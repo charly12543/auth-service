@@ -23,6 +23,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
 
+
     public JwtTokenValidator(JwtUtils jwtUtils) {
         this.jwtUtils = jwtUtils;
     }
@@ -34,6 +35,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
         String jwtToken = request.getHeader(HttpHeaders.AUTHORIZATION);
 
+
         if (jwtToken != null && jwtToken.startsWith("Bearer ")) {
             jwtToken = jwtToken.substring(7);
             DecodedJWT decodedJWT = jwtUtils.validateToken(jwtToken);
@@ -41,14 +43,23 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             String username = jwtUtils.extractUsername(decodedJWT);
             List<String> roles = jwtUtils.getSpecificClaim(decodedJWT, "authorities").asList(String.class);
 
+            System.out.println(">>> Username: " + username);
+            System.out.println(">>> Roles desde token: " + roles);
+
             List<GrantedAuthority> authorities = roles.stream()
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
 
-            Authentication authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(username, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);
     }
+
+
+
+
 }
