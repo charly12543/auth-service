@@ -9,13 +9,9 @@ RUN mvn clean package -DskipTests
 FROM openjdk:17-jdk-slim
 
 WORKDIR /app
-COPY --from=builder /app/target/*.jar auth-service.jar
+COPY --from=builder /app/target/auth-service-0.0.1.jar auth-service.jar
 
 EXPOSE 8090
 
 ENTRYPOINT ["java", "-jar", "auth-service.jar"]
 LABEL authors="Charly Bustamante"
-FROM ubuntu:latest
-LABEL authors="Hp"
-
-ENTRYPOINT ["top", "-b"]
