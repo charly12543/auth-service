@@ -18,7 +18,7 @@ public class HelloWorldController {
     }
 
     @GetMapping("/seguro")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public String seguro() {
         return "End-point SEGURO: Solo Roles con perfil ADMIN";
     }

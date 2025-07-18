@@ -35,30 +35,40 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
         String jwtToken = request.getHeader(HttpHeaders.AUTHORIZATION);
 
+        String path = request.getServletPath();
 
-        if (jwtToken != null && jwtToken.startsWith("Bearer ")) {
+        // ⛔ Ignorar rutas de login OAuth2
+        if (path.startsWith("/auth/oauth2/") || path.startsWith("/auth/login/oauth2/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 👉 Si no hay token o no es Bearer, no validar nada, solo seguir la cadena
+        if (jwtToken == null || !jwtToken.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        try {
             jwtToken = jwtToken.substring(7);
             DecodedJWT decodedJWT = jwtUtils.validateToken(jwtToken);
 
             String username = jwtUtils.extractUsername(decodedJWT);
             List<String> roles = jwtUtils.getSpecificClaim(decodedJWT, "authorities").asList(String.class);
 
-            System.out.println(">>> Username: " + username);
-            System.out.println(">>> Roles desde token: " + roles);
-
             List<GrantedAuthority> authorities = roles.stream()
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
 
-
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(username, null, authorities);
+            Authentication authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
+        } catch (Exception e) {
+            // 👉 Si el token es inválido, no bloquear la ruta, solo dejar sin autenticación
+            System.out.println("Token inválido: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
-
 
 
 
